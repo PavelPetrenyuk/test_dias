@@ -94,7 +94,6 @@ article-masks generate examples/input.csv --output result
 result/
 ├── manifest.json
 ├── masks.csv
-├── errors.csv
 └── articles/
     └── group-0001/
         ├── mask-0001/

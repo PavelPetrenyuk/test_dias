@@ -278,7 +278,6 @@ def generate(
 
     try:
         _write_masks_csv(plan, temporary_directory / "masks.csv")
-        _write_errors_csv(temporary_directory / "errors.csv")
         manifest = _generate_files(plan, temporary_directory)
         _write_json(manifest, temporary_directory / "manifest.json")
         os.replace(temporary_directory, output_directory)
@@ -476,11 +475,6 @@ def _write_masks_csv(plan: Plan, path: Path) -> None:
                     mask.source_row,
                 ]
             )
-
-
-def _write_errors_csv(path: Path) -> None:
-    with path.open("w", encoding="utf-8", newline="") as output:
-        csv.writer(output, delimiter=";").writerow(["row_number", "mask", "reason"])
 
 
 def _write_json(data: dict[str, object], path: Path) -> None:
