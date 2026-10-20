@@ -13,7 +13,7 @@ from collections.abc import Iterator
 from dataclasses import dataclass
 from itertools import islice, product
 from pathlib import Path
-from typing import BinaryIO, TypedDict
+from typing import BinaryIO
 
 logger = logging.getLogger(__name__)
 
@@ -37,11 +37,11 @@ UNICODE_HYPHENS = str.maketrans(
 
 
 class MaskGeneratorError(Exception):
-    """Ожидаемая ошибка входных данных или записи результата."""
+    ""
 
 
 class ValidationError(MaskGeneratorError):
-    """Набор ошибок, найденных до начала генерации."""
+    #Набор ошибок, найденных до начала генерации.
 
     def __init__(self, messages: list[str]) -> None:
         self.messages = messages
@@ -86,15 +86,8 @@ class Plan:
         return sum(mask.combinations * (len(mask.value) + 1) for mask in self.masks)
 
 
-class ShardInfo(TypedDict):
-    path: str
-    article_count: int
-    uncompressed_bytes: int
-    sha256_uncompressed: str
-
-
 def parse_masks_cell(value: str) -> list[str]:
-    """Разделяет одну CSV-ячейку на нормализованные маски."""
+    #Разделяет одну CSV-ячейку на нормализованные маски.
     normalized = value.replace("\u00a0", " ").translate(UNICODE_HYPHENS).strip()
     if normalized.endswith("."):
         normalized = normalized[:-1].rstrip()
@@ -107,7 +100,7 @@ def parse_masks_cell(value: str) -> list[str]:
 
 
 def build_plan(input_path: Path, settings: Settings | None = None) -> Plan:
-    """Читает весь CSV, проверяет маски и рассчитывает объём результата."""
+    #Читает весь CSV, проверяет маски и рассчитывает объём результата.
     selected_settings = settings or Settings()
     errors: list[str] = []
     masks: list[Mask] = []
@@ -222,7 +215,7 @@ def build_plan(input_path: Path, settings: Settings | None = None) -> Plan:
 
 
 def validate_mask(mask: str) -> str | None:
-    """Возвращает текст ошибки или None, если маска корректна."""
+    #Возвращает текст ошибки или None, если маска корректна.
     if not VALID_MASK.fullmatch(mask):
         invalid = sorted(set(re.sub(r"[A-Z0-9*-]", "", mask)))
         return "найдены недопустимые символы: " + ", ".join(map(repr, invalid))
@@ -234,7 +227,7 @@ def validate_mask(mask: str) -> str | None:
 
 
 def masks_overlap(left: str, right: str) -> bool:
-    """Проверяет, могут ли две маски породить одинаковый артикул."""
+    #Проверяет, могут ли две маски породить одинаковый артикул
     if len(left) != len(right):
         return False
 
@@ -251,7 +244,7 @@ def masks_overlap(left: str, right: str) -> bool:
 
 
 def generate_articles(mask: str) -> Iterator[str]:
-    """Лениво выдаёт все варианты одной маски."""
+    #Лениво выдаёт все варианты одной маски
     choices = [ALPHABET if character == "*" else character for character in mask]
     for combination in product(*choices):
         yield "".join(combination)
@@ -262,7 +255,7 @@ def generate(
     output_directory: Path,
     settings: Settings | None = None,
 ) -> dict[str, object]:
-    """Проверяет входной файл и формирует полный набор выходных файлов."""
+    #Проверяет входной файл и формирует полный набор выходных файлов.
     plan = build_plan(input_path, settings)
     if output_directory.exists():
         raise MaskGeneratorError(f"Выходной каталог уже существует: {output_directory}")
@@ -278,6 +271,7 @@ def generate(
 
     try:
         _write_masks_csv(plan, temporary_directory / "masks.csv")
+        _write_errors_csv(temporary_directory / "errors.csv")
         manifest = _generate_files(plan, temporary_directory)
         _write_json(manifest, temporary_directory / "manifest.json")
         os.replace(temporary_directory, output_directory)
@@ -373,12 +367,12 @@ def _write_mask_files(
     output_directory: Path,
     relative_directory: Path,
     settings: Settings,
-) -> list[ShardInfo]:
+) -> list[dict[str, object]]:
     output_directory.mkdir(parents=True, exist_ok=True)
     articles = generate_articles(mask.value)
     written_total = 0
     part_number = 1
-    shards: list[ShardInfo] = []
+    shards: list[dict[str, object]] = []
 
     while written_total < mask.combinations:
         records_in_part = min(
@@ -434,10 +428,7 @@ def _write_mask_files(
     return shards
 
 
-def _open_output(
-    raw_output: BinaryIO,
-    compression: str,
-) -> BinaryIO | gzip.GzipFile:
+def _open_output(raw_output: BinaryIO, compression: str) -> BinaryIO:
     if compression == "none":
         return raw_output
     if compression == "gzip":
@@ -475,6 +466,11 @@ def _write_masks_csv(plan: Plan, path: Path) -> None:
                     mask.source_row,
                 ]
             )
+
+
+def _write_errors_csv(path: Path) -> None:
+    with path.open("w", encoding="utf-8", newline="") as output:
+        csv.writer(output, delimiter=";").writerow(["row_number", "mask", "reason"])
 
 
 def _write_json(data: dict[str, object], path: Path) -> None:
