@@ -1,0 +1,50 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "article-mask-generator"
+version = "0.1.0"
+description = "Resource-efficient expansion of article masks from CSV files"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "Article Mask Generator contributors" }]
+dependencies = [
+    "fastapi>=0.115",
+    "psycopg[binary]>=3.2",
+    "python-multipart>=0.0.12",
+    "sqlalchemy>=2.0",
+    "uvicorn>=0.30",
+]
+
+[project.optional-dependencies]
+dev = [
+    "httpx2>=2.0",
+    "pytest>=8.0",
+    "ruff>=0.9",
+]
+
+[project.scripts]
+article-masks = "article_masks.cli:main"
+article-masks-worker = "article_masks.worker:main"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+addopts = "-q"
+pythonpath = ["src"]
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 88
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM", "RUF"]
+ignore = ["RUF001", "RUF002", "RUF003"]
+
